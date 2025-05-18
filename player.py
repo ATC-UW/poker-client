@@ -8,19 +8,28 @@ class SimplePlayer(Bot):
         super().__init__()
 
     def on_start(self, starting_chips: int):
-        // Save initial count
+        # Save initial count
         self.initialCount = starting_chips
 
-        // Track profit
+        # Track profit
         self.total_profit = 0
 
-        // Rounds player
+        # Rounds player
         self.rounds_played = 0
 
-        // history
+        # history yourself
         self.handHistory = []
 
-        print("Starting with {self.initialCoutn} chips")
+        # history hand other player
+        self.otherPlayerHandHistory = []
+
+        # history of bets yourself
+        self.betYourself = []
+
+        # history of bets other player
+        self.betOtherPlayer = []
+
+        print(f"Starting with {self.initialCount} chips")
 
     def on_round_start(self, round_state: RoundStateClient, remaining_chips: int):
         print("Player called on round start")
