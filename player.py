@@ -1,4 +1,4 @@
-
+import eval7
 from bot import Bot
 from type.poker_action import PokerAction
 from type.round_state import RoundStateClient
@@ -8,7 +8,19 @@ class SimplePlayer(Bot):
         super().__init__()
 
     def on_start(self, starting_chips: int):
-        print("Player called on game start")
+        // Save initial count
+        self.initialCount = starting_chips
+
+        // Track profit
+        self.total_profit = 0
+
+        // Rounds player
+        self.rounds_played = 0
+
+        // history
+        self.handHistory = []
+
+        print("Starting with {self.initialCoutn} chips")
 
     def on_round_start(self, round_state: RoundStateClient, remaining_chips: int):
         print("Player called on round start")

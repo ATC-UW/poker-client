@@ -16,7 +16,7 @@ class Bot(ABC):
     @abstractmethod
     def on_start(self, starting_chips: int):
         """ Called when the game starts. """
-        pass
+        self.
 
     @abstractmethod
     def on_round_start(self, round_state: RoundStateClient, remaining_chips: int):
