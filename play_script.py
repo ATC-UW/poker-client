@@ -32,17 +32,17 @@ def main():
 
     # --- Create a sample round state for testing ---
     round_state_data = {
-        "round": "PREFLOP",
         "round_num": 1,
+        "round": "PREFLOP",
         "community_cards": [],
         "pot": 30,
-        "current_player": player_id,
+        "current_player": [player_id],
         "current_bet": 20,
+        "min_raise": 20,
+        "max_raise": 980,
         "player_bets": {str(player_id): 10, "2": 20, "3": 0},
         "player_actions": {str(player_id): "RAISE", "2": "RAISE", "3": "WAIT"},
         "player_money": {str(player_id): 990, "2": 980, "3": 1000},
-        "min_raise": 20,
-        "max_raise": 980,
         "side_pots": []
     }
     round_state = RoundStateClient.from_message(round_state_data)
