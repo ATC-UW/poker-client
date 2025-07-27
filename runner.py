@@ -215,30 +215,36 @@ class Runner:
                 self.blind_posted = True
                 return
             
-        action, amount = self.bot.get_action(self.current_round, self.player_money)
-        self.logger.info(f"Bot action: {action.name}, amount: {amount}")
-        ok = self._validate_action(action.value, amount)
-        if not ok:
-            self.logger.error("Invalid action or amount")
-            # punish the bot for invalid action
+        try:
+            action, amount = self.bot.get_action(self.current_round, self.player_money)
+            self.logger.info(f"Bot action: {action.name}, amount: {amount}")
+            ok = self._validate_action(action.value, amount)
+            if not ok:
+                self.logger.error("Invalid action or amount")
+                # punish the bot for invalid action
+                self.send_action_to_server(self.player_id, 1, 0)  # fold
+                return
+            # For CALL actions, calculate actual call amount and send to server
+            if action.value == 3:  # CALL
+                # Calculate actual call amount for local money tracking
+                actual_call_amount = self.current_round.current_bet - self.current_round.player_bets[str(self.player_id)]
+                self.send_action_to_server(self.player_id, action.value, actual_call_amount)
+                self.player_money -= actual_call_amount  # Deduct actual amount locally
+            # For ALL_IN actions, calculate actual all-in amount and send to server
+            elif action.value == 5:  # ALL_IN
+                # All-in amount is the player's remaining money
+                actual_allin_amount = self.player_money
+                self.send_action_to_server(self.player_id, action.value, actual_allin_amount)
+                self.player_money -= actual_allin_amount  # Deduct actual amount locally
+            else:
+                # For other actions, send the amount and deduct locally
+                self.send_action_to_server(self.player_id, action.value, amount)
+                self.player_money -= amount
+        except Exception as e:
+            self.logger.exception(f"Error in get_action: {e}")
+            # Fold on any exception
             self.send_action_to_server(self.player_id, 1, 0)  # fold
             return
-        # For CALL actions, calculate actual call amount and send to server
-        if action.value == 3:  # CALL
-            # Calculate actual call amount for local money tracking
-            actual_call_amount = self.current_round.current_bet - self.current_round.player_bets[str(self.player_id)]
-            self.send_action_to_server(self.player_id, action.value, actual_call_amount)
-            self.player_money -= actual_call_amount  # Deduct actual amount locally
-        # For ALL_IN actions, calculate actual all-in amount and send to server
-        elif action.value == 5:  # ALL_IN
-            # All-in amount is the player's remaining money
-            actual_allin_amount = self.player_money
-            self.send_action_to_server(self.player_id, action.value, actual_allin_amount)
-            self.player_money -= actual_allin_amount  # Deduct actual amount locally
-        else:
-            # For other actions, send the amount and deduct locally
-            self.send_action_to_server(self.player_id, action.value, amount)
-            self.player_money -= amount
 
     def _handle_round_end(self, _: Any) -> None:
         """Handle round end message."""
