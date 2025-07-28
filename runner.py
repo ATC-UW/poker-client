@@ -8,6 +8,7 @@ from type.utils import get_message_type_name
 from config import START_MONEY, GAMEID_LOG_FILE
 from type.message import MessageType
 from type.round_state import RoundStateClient
+from type.poker_action import PokerAction
 
 class Runner:
     """
@@ -224,6 +225,15 @@ class Runner:
                 # punish the bot for invalid action
                 self.send_action_to_server(self.player_id, 1, 0)  # fold
                 return
+            
+            # Check if raise action uses all player's money - convert to all-in
+            if action.value == 4:  # RAISE
+                actual_raise_amount = amount + self.current_round.player_bets[str(self.player_id)]
+                if actual_raise_amount == self.player_money:
+                    self.logger.info(f"Converting raise to all-in: {action.name} -> ALL_IN")
+                    action = PokerAction.ALL_IN
+                    amount = self.player_money
+            
             # For CALL actions, calculate actual call amount and send to server
             if action.value == 3:  # CALL
                 # Calculate actual call amount for local money tracking
