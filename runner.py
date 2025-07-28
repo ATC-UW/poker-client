@@ -229,7 +229,7 @@ class Runner:
             # Check if raise action uses all player's money - convert to all-in
             if action.value == 4:  # RAISE
                 actual_raise_amount = amount + self.current_round.player_bets[str(self.player_id)]
-                if actual_raise_amount == self.player_money:
+                if actual_raise_amount >= self.player_money:
                     self.logger.info(f"Converting raise to all-in: {action.name} -> ALL_IN")
                     action = PokerAction.ALL_IN
                     amount = self.player_money
