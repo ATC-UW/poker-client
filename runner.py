@@ -49,6 +49,10 @@ class Runner:
         self.is_small_blind = False
         self.is_big_blind = False
         self.blind_posted = False
+        
+        # Track previous round actions for all-in detection
+        self.previous_round_action = None
+        self.current_round_number = 0
 
     @staticmethod
     def _setup_logger():
@@ -187,16 +191,29 @@ class Runner:
                 for i, pot in enumerate(message['side_pots']):
                     self.logger.info(f"  Pot {i}: {pot['amount']} chips, eligible players: {pot['eligible_players']}")
 
-    def _handle_round_start(self, _: Any) -> None:
+    def _handle_round_start(self, message: Any) -> None:
         """Handle round start message."""
+        # Extract round number from message if available
+        if hasattr(message, 'round_num') and message.round_num is not None:
+            self.current_round_number = message.round_num
+            self.logger.info(f"Round {self.current_round_number} started")
+        else:
+            self.current_round_number += 1
+            self.logger.info(f"Round {self.current_round_number} started")
+            
         if self.bot and self.current_round:
             self.bot.on_round_start(self.current_round, self.player_money)
-        self.logger.info("Round started")
 
     def _handle_request_action(self, _: Any) -> None:
         """Handle request for player action."""
         if not self.bot or not self.current_round:
             self.logger.error("No bot or current round available")
+            return
+        
+        # Check if this player was all-in in the previous round and automatically respond with ALL_IN
+        if self.current_round_number > 0 and self.previous_round_action == PokerAction.ALL_IN:
+            self.logger.info(f"Player was all-in in previous round. Automatically responding with ALL_IN (amount: 0)")
+            self.send_action_to_server(self.player_id, 5, 0)  # ALL_IN with 0 amount
             return
         
         # Check if this player needs to post a blind and hasn't done so yet
@@ -219,6 +236,7 @@ class Runner:
         try:
             action, amount = self.bot.get_action(self.current_round, self.player_money)
             self.logger.info(f"Bot action: {action.name}, amount: {amount}")
+            
             ok = self._validate_action(action.value, amount)
             if not ok:
                 self.logger.error("Invalid action or amount")
@@ -250,6 +268,10 @@ class Runner:
                 # For other actions, send the amount and deduct locally
                 self.send_action_to_server(self.player_id, action.value, amount)
                 self.player_money -= amount
+            
+            # Store the action for next round's all-in detection
+            self.previous_round_action = action
+
         except Exception as e:
             self.logger.exception(f"Error in get_action: {e}")
             # Fold on any exception
@@ -481,4 +503,7 @@ class Runner:
         self.is_small_blind = False
         self.is_big_blind = False
         self.blind_posted = False
+        # Reset all-in tracking for new game
+        self.previous_round_action = None
+        self.current_round_number = 0
         self.logger.info(f"Reset for Game #{self.game_count}, current money: {self.player_money}, delta: {self.player_delta}")
