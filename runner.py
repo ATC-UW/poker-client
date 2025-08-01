@@ -255,12 +255,21 @@ class Runner:
             if action.value == 3:  # CALL
                 # Calculate actual call amount for local money tracking
                 actual_call_amount = self.current_round.current_bet - self.current_round.player_bets[str(self.player_id)]
-                if actual_call_amount < 0:
-                    self.logger.error(f"Invalid call action: cannot afford {actual_call_amount}, have {self.player_money}")
-                    self.send_action_to_server(self.player_id, 1, 0)  # fold
+                
+                if actual_call_amount >= self.player_money:
+                    self.logger.info(f"Player is all-in: {action.name} -> ALL_IN")
+                    action = PokerAction.ALL_IN
+                    amount = self.player_money
+                    self.send_action_to_server(self.player_id, action.value, amount)
+                    self.player_money -= amount
                     return
-                self.send_action_to_server(self.player_id, action.value, actual_call_amount)
-                self.player_money -= actual_call_amount  # Deduct actual amount locally
+                else:
+                    if actual_call_amount < 0:
+                        self.logger.error(f"Invalid call action: cannot afford {actual_call_amount}, have {self.player_money}")
+                        self.send_action_to_server(self.player_id, 1, 0)  # fold
+                        return
+                    self.send_action_to_server(self.player_id, action.value, actual_call_amount)
+                    self.player_money -= actual_call_amount  # Deduct actual amount locally
             # For ALL_IN actions, calculate actual all-in amount and send to server
             elif action.value == 5:  # ALL_IN
                 # All-in amount is the player's remaining money
