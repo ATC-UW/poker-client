@@ -240,7 +240,10 @@ class Runner:
             if not ok:
                 self.logger.error("Invalid action or amount")
                 # punish the bot for invalid action
-                self.send_action_to_server(self.player_id, 1, 0)  # fold
+                if self.previous_round_action == PokerAction.ALL_IN:
+                    self.send_action_to_server(self.player_id, 5, 0)  # all-in
+                else:
+                    self.send_action_to_server(self.player_id, 1, 0)  # fold
                 return
             
             # Check if raise action uses all player's money - convert to all-in
@@ -266,7 +269,10 @@ class Runner:
                 else:
                     if actual_call_amount < 0:
                         self.logger.error(f"Invalid call action: cannot afford {actual_call_amount}, have {self.player_money}")
-                        self.send_action_to_server(self.player_id, 1, 0)  # fold
+                        if self.previous_round_action == PokerAction.ALL_IN:
+                            self.send_action_to_server(self.player_id, 5, 0)  # all-in
+                        else:
+                            self.send_action_to_server(self.player_id, 1, 0)  # fold
                         return
                     self.send_action_to_server(self.player_id, action.value, actual_call_amount)
                     self.player_money -= actual_call_amount  # Deduct actual amount locally
@@ -287,7 +293,10 @@ class Runner:
         except Exception as e:
             self.logger.exception(f"Error in get_action: {e}")
             # Fold on any exception
-            self.send_action_to_server(self.player_id, 1, 0)  # fold
+            if self.previous_round_action == PokerAction.ALL_IN:
+                self.send_action_to_server(self.player_id, 5, 0)  # all-in
+            else:
+                self.send_action_to_server(self.player_id, 1, 0)  # fold
             return
 
     def _handle_round_end(self, _: Any) -> None:
